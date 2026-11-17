@@ -1,0 +1,22 @@
+# 编译输出
+Debug/
+Release/
+*.axf
+*.hex
+*.bin
+*.elf
+
+# CubeMX备份
+*.ioc.backup
+
+# Keil配置缓存
+*.crf
+*.d
+*.dep
+*.o
+*.lst
+*.map
+
+# 系统文件
+Thumbs.db
+.DS_Store
