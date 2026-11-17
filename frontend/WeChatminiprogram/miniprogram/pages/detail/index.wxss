@@ -1,0 +1,19 @@
+/* 设备详情页 */
+
+.alarm-title {
+  font-size: 28rpx;
+  color: var(--text);
+  margin-left: 12rpx;
+}
+
+.alarm-time {
+  margin-left: 20rpx;
+  flex: none;
+}
+
+/* 原生 switch 在部分安卓机上偏大，稍微收一点视觉重量 */
+switch {
+  transform: scale(0.9);
+  transform-origin: right center;
+  flex: none;
+}

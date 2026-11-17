@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "设备监控",
+  "enablePullDownRefresh": false,
+  "disableScroll": true,
+  "usingComponents": {
+    "ai-buddy": "/components/ai-buddy/index"
+  }
+}

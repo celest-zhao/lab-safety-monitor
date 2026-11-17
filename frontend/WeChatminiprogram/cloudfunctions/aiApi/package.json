@@ -1,0 +1,10 @@
+{
+  "name": "aiApi",
+  "version": "1.0.0",
+  "description": "数据小助手：把设备快照讲成人话（优先大模型，没配 key 时走本地规则）",
+  "main": "index.js",
+  "private": true,
+  "dependencies": {
+    "wx-server-sdk": "~2.4.0"
+  }
+}

@@ -1,0 +1,54 @@
+{
+  "pages": [
+    "pages/device/index",
+    "pages/trend/index",
+    "pages/alarm/index",
+    "pages/mine/index",
+    "pages/detail/index"
+  ],
+  "window": {
+    "backgroundColor": "@bgColor",
+    "backgroundTextStyle": "@bgTxtStyle",
+    "navigationBarBackgroundColor": "@navBg",
+    "navigationBarTitleText": "环境监测",
+    "navigationBarTextStyle": "@navTxt",
+    "enablePullDownRefresh": false
+  },
+  "tabBar": {
+    "color": "@tabColor",
+    "selectedColor": "@tabSelColor",
+    "backgroundColor": "@tabBg",
+    "borderStyle": "@tabBorder",
+    "list": [
+      {
+        "pagePath": "pages/device/index",
+        "text": "设备",
+        "iconPath": "@iconDevice",
+        "selectedIconPath": "@iconDeviceOn"
+      },
+      {
+        "pagePath": "pages/trend/index",
+        "text": "趋势",
+        "iconPath": "@iconTrend",
+        "selectedIconPath": "@iconTrendOn"
+      },
+      {
+        "pagePath": "pages/alarm/index",
+        "text": "报警",
+        "iconPath": "@iconAlarm",
+        "selectedIconPath": "@iconAlarmOn"
+      },
+      {
+        "pagePath": "pages/mine/index",
+        "text": "我的",
+        "iconPath": "@iconMine",
+        "selectedIconPath": "@iconMineOn"
+      }
+    ]
+  },
+  "darkmode": true,
+  "themeLocation": "theme.json",
+  "sitemapLocation": "sitemap.json",
+  "style": "v2",
+  "lazyCodeLoading": "requiredComponents"
+}

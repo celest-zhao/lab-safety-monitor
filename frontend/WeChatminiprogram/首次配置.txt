@@ -1,0 +1,28 @@
+这份代码第一次跑起来，要改三处（其余都能直接用）
+
+1. 云开发环境 ID
+   文件：miniprogram/app.js 第 13 行
+   现在：env: 'cloud1-xxxxxxxxxxxx'
+   改成：你自己小程序的云开发环境 ID（微信开发者工具 → 云开发 → 设置 → 环境 ID）
+
+2. 华为云 IoTDA 的 AK/SK
+   文件：cloudfunctions/iotApi/config.js（包里没有，需要从 config.example.js 复制一份）
+   必填：iotda.ak、iotda.sk、iotda.projectId、iotda.host、iotda.region、iotda.instanceId
+   说明：AK/SK 在华为云「我的凭证 → 访问密钥」里建；
+        projectId 在「我的凭证 → API 凭证」；
+        host 形如 xxxxx.st1.iotda-app.cn-north-4.myhuaweicloud.com，在 IoTDA 控制台实例详情页复制
+
+3. 大模型 key（只有用到桌宠问答才需要）
+   文件：cloudfunctions/aiApi/config.js（同样从 config.example.js 复制）
+   必填：llmKey（阿里云百炼控制台 → API-KEY 管理里创建，sk- 开头）
+   可选：llmModel、llmBaseUrl，默认走百炼 deepseek-v4.1-flash
+
+上传云函数时，两个函数都要选「上传并部署：云端安装依赖」，
+不要选「上传并部署：所有文件」，否则缺少 wx-server-sdk 会报错。
+
+数据库需要这几张集合（云开发控制台手动新建，权限设为「仅创建者可读写」或自定义）：
+  users      设备归属与白名单（字段 allowed: true 表示该 openid 可访问）
+  messages   对话记录
+  alarms     报警记录
+
+更细的部署步骤和排错记录见 README.md 与上级目录的 docs/handover.md。

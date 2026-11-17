@@ -1,0 +1,119 @@
+<view class="buddy theme-{{theme}}">
+  <!--
+    晃悠层：只有它负责"位置"（transform 位移），里面的人浮动、缩放各管各的。
+    三层 transform 分开是为了互不覆盖：
+      .bfab-roam → 走到哪 / 被拖到哪（xy 位移，带过渡）
+      .bfab      → 呼吸浮动 / 走路碎步 / 站定时静止
+      .bfab-img  → 按下缩放 / 休眠缩小
+  -->
+  <!--
+    走路时缓动必须是 linear：腿是等间隔换帧的，位移要是还用 ease-out，
+    起步那一下腿迈得快、人挪得慢，立刻就滑步了。平时（回原位、拖拽归一）保留缓动。
+  -->
+  <view
+    class="bfab-roam"
+    style="transform: translate3d({{pos.dx}}px, {{pos.dy}}px, 0); transition-duration: {{dur}}ms; transition-timing-function: {{walking ? 'linear' : 'cubic-bezier(0.33, 0.02, 0.24, 1)'}}"
+  >
+    <!-- 寒暄小气泡：它自己冒出来的话。主气泡开着时不显示（JS 里 say 会被清空） -->
+    <view
+      wx:if="{{say}}"
+      class="say {{sayBelow ? 'say-below' : 'say-above'}}"
+      style="left: {{sayX}}px; width: {{sayW}}px"
+    >{{say}}</view>
+
+    <!-- 说话气泡：跟着小人走，上下左右按小人在屏幕的位置自动翻 -->
+    <view
+      wx:if="{{open}}"
+      class="bp {{bpBelow ? 'bp-below' : 'bp-above'}} {{kbOn ? 'bp-kb' : ''}}"
+      style="left: {{bpX}}px; {{kbStyle}}"
+      catchtap="noop"
+      catchtouchmove="noop"
+    >
+      <view class="bp-arrow" style="left: {{bpArrow}}px"></view>
+      <view class="bp-hd">
+        <image class="bp-ava" src="{{headSrc}}" mode="aspectFill" />
+        <text class="bp-title">Luster</text>
+        <view class="bp-close" bindtap="close">×</view>
+      </view>
+
+      <!-- 对话态：预设问答流。输入框只在云端 FREE_CHAT 放行时出现（默认没有） -->
+      <block wx:if="{{mode === 'chat'}}">
+        <scroll-view
+          class="bp-chat"
+          scroll-y
+          scroll-into-view="{{chatAnchor}}"
+          scroll-with-animation
+        >
+          <view wx:for="{{msgs}}" wx:key="id" id="m{{index}}" class="cm cm-{{item.role}}">
+            <view class="cm-bub">
+              <view wx:if="{{item.live && !item.text}}" class="cm-dots">
+                <view class="bp-dot"></view>
+                <view class="bp-dot bp-dot2"></view>
+                <view class="bp-dot bp-dot3"></view>
+              </view>
+              <text wx:else class="cm-text">{{item.text}}</text>
+            </view>
+            <text wx:if="{{item.src}}" class="cm-src">{{item.src}}</text>
+          </view>
+          <view id="chatEnd" class="cm-end"></view>
+        </scroll-view>
+
+        <view class="bp-chips">
+          <view
+            wx:for="{{presets}}"
+            wx:key="id"
+            class="chip {{asking ? 'chip-off' : ''}}"
+            data-id="{{item.id}}"
+            catchtap="onPreset"
+          >{{item.label}}</view>
+        </view>
+
+        <!-- 自由输入：只有 health 返回 freeChat 才渲染。adjust-position 关掉，
+             气泡自己按键盘高度抬（见 applyKb），否则会被键盘盖住输入框 -->
+        <view wx:if="{{freeChat}}" class="bp-in">
+          <input
+            class="bp-field"
+            value="{{draft}}"
+            placeholder="问点什么"
+            placeholder-class="bp-ph"
+            maxlength="120"
+            confirm-type="send"
+            confirm-hold
+            adjust-position="{{false}}"
+            cursor-spacing="0"
+            bindinput="onInput"
+            bindconfirm="onSend"
+            bindfocus="onFocus"
+            bindblur="onBlur"
+          />
+          <view class="bp-send {{draft && !asking ? '' : 'bp-send-off'}}" catchtap="onSend">发送</view>
+        </view>
+      </block>
+
+      <view wx:else class="bp-body">
+        <view wx:if="{{thinking}}" class="bp-think">
+          <view class="bp-dot bp-dot1"></view>
+          <view class="bp-dot bp-dot2"></view>
+          <view class="bp-dot bp-dot3"></view>
+          <text class="bp-hint">{{hint}}</text>
+        </view>
+        <text wx:else class="bp-text">{{shown}}</text>
+      </view>
+
+      <view wx:if="{{mode === 'data'}}" class="bp-ft">
+        <view class="bp-again {{busy ? 'bp-again-off' : ''}}" bindtap="askCloud">让 AI 细说</view>
+        <text class="bp-src">{{sourceText}}</text>
+      </view>
+    </view>
+
+    <view
+      class="bfab {{open ? 'bfab-on' : ''}} {{walking ? 'bfab-walk' : ''}} {{perched ? 'bfab-perch' : ''}} {{dragging ? 'bfab-drag' : ''}} {{sleeping ? 'bfab-sleep' : ''}}"
+      bindtouchstart="onTouchStart"
+      catchtouchmove="onTouchMove"
+      bindtouchend="onTouchEnd"
+      bindtouchcancel="onTouchCancel"
+    >
+      <image class="bfab-img" src="{{imgSrc}}" mode="aspectFit" />
+    </view>
+  </view>
+</view>

@@ -1,0 +1,517 @@
+/**
+ * 数据小助手样式
+ *
+ * 形象是画好的立绘图片（三帧 × 双主题），不再是代码拼的渐变球。
+ * 尺寸用 px 不用 rpx：rpx 会随屏宽缩放（375 宽 53px、414 宽 59px），
+ * 人形角色宽度只有高度的 0.58，同尺寸比实心球"轻"得多，缩起来会发虚。
+ * 96px 盒子 × 384/512 = 72px 本体高、约 42px 宽，这个比例才有存在感。
+ *
+ * 配色是交叉的（见 index.js 的 OUTFIT）：
+ *   深色主题穿白装、浅色主题穿深蓝装 —— 同色系在两套底色上都会糊。
+ *
+ * 三个 transform 必须分层，否则互相覆盖：
+ *   .bfab-roam → 走到哪（位移，带过渡）
+ *   .bfab      → 呼吸浮动 / 走路碎步 / 站定
+ *   .bfab-img  → 点击缩放（scale），origin 在脚底，像"挺直身子"而不是整体膨胀
+ *
+ * 层级：小人 80，低于新建模块弹层的 90/91 —— 弹层打开时小人要躲到后面去。
+ */
+
+/* ------------------------------- 悬浮小人 ------------------------------- */
+
+/**
+ * 晃悠层：钉在右下角（原位），只叠位移。
+ * 位移用 transform，不走 left/top —— 一个是 GPU 合成不触发重排，
+ * 另一个是它和 .bfab 的动画分层：外层管"人在哪"，内层管"人怎么动"。
+ */
+.bfab-roam {
+  position: fixed;
+  right: 0;
+  /* 104rpx：角色脚底正好落在原来那个球的下沿，位置不会因为换形象而挪动 */
+  bottom: calc(150rpx + env(safe-area-inset-bottom));
+  z-index: 80;
+  transition: transform 900ms cubic-bezier(0.33, 0.02, 0.24, 1);
+  will-change: transform;
+}
+
+.bfab {
+  position: relative;
+  z-index: 2;
+  width: 96px;
+  height: 96px;
+  /* 倾斜/缩放都以脚底为轴，人才不会"整体膨胀" */
+  transform-origin: 50% 85%;
+  animation: buddyFloat 4.6s ease-in-out infinite;
+}
+
+/* 走路：小碎步 + 轻微左右晃，和待机的慢呼吸区分开 */
+.bfab-walk {
+  animation: buddyWalk 0.46s ease-in-out infinite;
+}
+
+/* 站在卡片边沿 / 虚线上：脚踩着东西，就不该再飘 */
+.bfab-perch {
+  animation: none;
+}
+
+/* 打开气泡时小人"站定"，视线更集中（放最后，优先级压过上面两个） */
+.bfab-on {
+  animation: none;
+}
+
+.bfab-img {
+  width: 100%;
+  height: 100%;
+  /* 脚底在画布 435/512 = 85% 处，缩放锚点要对齐这里 */
+  transform-origin: 50% 85%;
+  transition: transform 0.16s ease, opacity 0.3s ease;
+  /**
+   * 第一层是 0 偏移的 1px 暗晕，起"描边"作用 —— 立绘的白腿白脚在浅底上会直接消失，
+   * 光靠向下的投影救不回来（左右两侧还是糊）。第二层才是落影。
+   */
+  filter: drop-shadow(0 0 1px rgba(28, 42, 96, 0.55)) drop-shadow(0 4px 9px rgba(28, 42, 96, 0.18));
+}
+
+.bfab:active .bfab-img {
+  transform: scale(1.08);
+}
+
+/* 拖拽中：像被拎起来，别再呼吸浮动（不然跟手会飘） */
+.bfab-drag {
+  animation: none;
+  transform: scale(1.06);
+  transition: transform 0.18s ease;
+}
+
+/**
+ * 休眠：半透明、停呼吸。
+ * 现在有真睡姿图了（横躺，按画布宽度适配），不用再缩到 0.7 冒充 ——
+ * 但躺着的形象天然比站着宽，所以仍要收一点，看着才像"缩在角落"。
+ * 缩放锚点改回画布中心：躺着没有脚底，用 85% 会把人往下拖。
+ */
+.bfab-sleep {
+  animation: none;
+}
+
+.bfab-sleep .bfab-img {
+  transform: scale(0.88);
+  transform-origin: 50% 50%;
+  opacity: 0.72;
+  transition: transform 0.35s ease, opacity 0.3s ease;
+}
+
+/* 睡着时按下去别放大到 1.08（从 0.88 弹过去像被吓醒），只轻轻抬一点 */
+.bfab-sleep:active .bfab-img {
+  transform: scale(0.94);
+}
+
+/* 深色：白装在近黑底上本来就清楚，不需要描边，只要一层冷光把它托起来 */
+.theme-dark .bfab-img {
+  filter: drop-shadow(0 4px 14px rgba(90, 150, 255, 0.38));
+}
+
+/* 深色下白衣缩到 0.7 再压到 0.6 会基本看不见（黑底上只剩一个小点），留一点存在感 */
+.theme-dark .bfab-sleep .bfab-img {
+  opacity: 0.72;
+}
+
+/* ------------------------------- 说话气泡 ------------------------------- */
+
+/**
+ * 寒暄小气泡：它自己冒出来的那几句话。
+ * 和主气泡的区别：窄、没有尖角、没有头尾、3.6 秒自己消失。
+ * 宽度不写死在这里 —— 由 buddy-geo.tip() 按字数算好塞进 style，
+ * 三个字和二十五个字用同一个宽度会显得空。
+ * 不做尖角是因为它可能在小人正上方也可能歪到一侧（贴边时被夹的），
+ * 硬画个尖角指不准反而更怪。
+ */
+.say {
+  position: absolute;
+  z-index: 4;
+  box-sizing: border-box;
+  padding: 14rpx 20rpx;
+  border-radius: 22rpx;
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--sheet-bg);
+  border: 1rpx solid var(--line);
+  box-shadow: 0 10rpx 28rpx rgba(16, 24, 48, 0.14);
+  animation: sayIn 0.22s ease-out;
+}
+
+.say-above {
+  bottom: 100px;
+}
+
+.say-below {
+  top: 104px;
+}
+
+.theme-dark .say {
+  box-shadow: 0 10rpx 30rpx rgba(0, 0, 0, 0.5);
+}
+
+.bp {
+  position: absolute;
+  z-index: 3;
+  /* 600rpx 正好是 0.8 倍屏宽 —— 横向避让是 JS 按同一个比例算的，改宽度要两边一起改 */
+  box-sizing: border-box;
+  width: 600rpx;
+  padding: 24rpx 26rpx 18rpx;
+  border-radius: 30rpx;
+  background: var(--sheet-bg);
+  border: 1rpx solid var(--line);
+  box-shadow: 0 24rpx 64rpx rgba(16, 24, 48, 0.22);
+  animation: bpIn 0.22s ease-out;
+}
+
+/* 小人在下半屏 → 气泡在上；在上半屏（比如坐在主卡上）→ 气泡挪到下面，不然顶出屏幕 */
+.bp-above {
+  bottom: 100px;
+}
+
+.bp-below {
+  top: 100px;
+}
+
+/* 指向小人的小尖角：横向位置由 JS 算（left），保证对准小人中心 */
+.bp-arrow {
+  position: absolute;
+  width: 24rpx;
+  height: 24rpx;
+  background: var(--sheet-bg);
+}
+
+.bp-above .bp-arrow {
+  bottom: -13rpx;
+  border-right: 1rpx solid var(--line);
+  border-bottom: 1rpx solid var(--line);
+  transform: rotate(45deg);
+  border-radius: 0 0 6rpx 0;
+}
+
+.bp-below .bp-arrow {
+  top: -13rpx;
+  border-top: 1rpx solid var(--line);
+  border-right: 1rpx solid var(--line);
+  transform: rotate(-45deg);
+  border-radius: 0 6rpx 0 0;
+}
+
+.bp-hd {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+/* 对话里的头像：立绘裁出来的头部，不是另画的一张脸 */
+.bp-ava {
+  width: 52rpx;
+  height: 52rpx;
+  border-radius: 50%;
+  margin-right: 14rpx;
+  flex-shrink: 0;
+  background: var(--item-bg);
+}
+
+.bp-title {
+  flex: 1;
+  font-size: 26rpx;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.bp-close {
+  width: 48rpx;
+  height: 48rpx;
+  line-height: 44rpx;
+  text-align: center;
+  font-size: 32rpx;
+  color: var(--text-hint);
+  margin-right: -12rpx;
+}
+
+.bp-body {
+  min-height: 96rpx;
+}
+
+.bp-text {
+  font-size: 26rpx;
+  line-height: 1.68;
+  color: var(--text);
+  /* 不能用 break-all / break-word：会把「26.3」从中间断开。
+     默认规则只在汉字间断行，数字串和单位会保持完整。 */
+  word-break: normal;
+}
+
+/* 思考中的三个点 */
+.bp-think {
+  display: flex;
+  align-items: center;
+  height: 96rpx;
+}
+
+.bp-dot {
+  width: 10rpx;
+  height: 10rpx;
+  border-radius: 50%;
+  margin-right: 8rpx;
+  background: var(--primary);
+  animation: dotUp 1.1s ease-in-out infinite;
+}
+
+.bp-dot2 {
+  animation-delay: 0.16s;
+}
+
+.bp-dot3 {
+  animation-delay: 0.32s;
+  margin-right: 16rpx;
+}
+
+.bp-hint {
+  font-size: 24rpx;
+  color: var(--text-hint);
+}
+
+.bp-ft {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16rpx;
+  padding-top: 14rpx;
+  border-top: 1rpx solid var(--line);
+}
+
+.bp-again {
+  font-size: 25rpx;
+  font-weight: 500;
+  color: var(--primary);
+  padding: 6rpx 20rpx 6rpx 0;
+}
+
+.bp-again-off {
+  color: var(--text-hint);
+}
+
+.bp-src {
+  font-size: 20rpx;
+  color: var(--text-hint);
+}
+
+/* ------------------------------- 对话态 ------------------------------- */
+
+/* 高度必须定死（不能用 max-height）：scroll-view 没有确定高度就不滚，
+   回答一长就把底部胶囊顶出屏幕。定高还有个好处 —— 逐字吐字时气泡不抖。 */
+.bp-chat {
+  height: 30vh;
+  margin: 0 -4rpx;
+}
+
+.cm {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16rpx;
+}
+
+.cm-me {
+  align-items: flex-end;
+}
+
+.cm-bub {
+  max-width: 86%;
+  padding: 12rpx 18rpx;
+  border-radius: 18rpx 18rpx 18rpx 6rpx;
+  background: var(--item-bg);
+}
+
+.cm-me .cm-bub {
+  border-radius: 18rpx 18rpx 6rpx 18rpx;
+  background: var(--primary);
+}
+
+.cm-text {
+  font-size: 26rpx;
+  line-height: 1.62;
+  color: var(--text);
+  /* 和 .bp-text 同一条：break-all 会把「26.3℃」从中间断开 */
+  word-break: normal;
+}
+
+.cm-me .cm-text {
+  color: #fff;
+}
+
+.cm-src {
+  margin-top: 6rpx;
+  font-size: 20rpx;
+  color: var(--text-hint);
+}
+
+.cm-dots {
+  display: flex;
+  align-items: center;
+  height: 40rpx;
+}
+
+/* 滚动锚点：高度为 0，只用来让 scroll-into-view 有个落点 */
+.cm-end {
+  height: 2rpx;
+}
+
+.bp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 16rpx;
+}
+
+.chip {
+  font-size: 24rpx;
+  line-height: 1;
+  padding: 14rpx 20rpx;
+  margin: 0 12rpx 12rpx 0;
+  border-radius: 999rpx;
+  color: var(--primary-text);
+  background: var(--card);
+  border: 1rpx solid var(--line);
+}
+
+/* 正在回答时胶囊变淡，但不隐藏：位置不动，避免手指点空 */
+.chip-off {
+  opacity: 0.45;
+}
+
+/* 自由输入行：只有云端放行时才渲染，没开的人看不到这一行 */
+.bp-in {
+  display: flex;
+  align-items: center;
+  margin-top: 6rpx;
+  padding: 6rpx 6rpx 6rpx 22rpx;
+  border-radius: 999rpx;
+  background: var(--item-bg);
+  border: 1rpx solid var(--line);
+}
+
+.bp-field {
+  flex: 1;
+  min-width: 0;
+  height: 56rpx;
+  font-size: 26rpx;
+  color: var(--text);
+}
+
+.bp-ph {
+  color: var(--text-hint);
+  font-size: 24rpx;
+}
+
+.bp-send {
+  flex: none;
+  margin-left: 10rpx;
+  padding: 0 24rpx;
+  height: 56rpx;
+  line-height: 56rpx;
+  border-radius: 999rpx;
+  font-size: 24rpx;
+  color: #fff;
+  background: var(--primary);
+}
+
+/* 空草稿 / 正在回答时置灰，但不挪位置 */
+.bp-send-off {
+  opacity: 0.4;
+}
+
+/* 键盘弹起：对话区压矮一档。不压的话「对话 + 胶囊 + 输入行」加起来比
+   键盘上方剩下的空间还高，气泡顶部会顶到状态栏。 */
+.bp-kb .bp-chat {
+  height: 18vh;
+}
+
+/* 小屏（SE 一类 568px 高）：30vh 的对话区会把气泡顶出屏幕上方，压到 24vh。
+   胶囊会折成两行，高度从别处省 —— 宁可少看一行历史，也不要顶到状态栏。 */
+@media screen and (max-height: 680px) {
+  .bp-chat {
+    height: 24vh;
+  }
+  /* 小屏 + 键盘：只剩 14vh，聊天气泡能露三行就够 */
+  .bp-kb .bp-chat {
+    height: 14vh;
+  }
+  .chip {
+    padding: 12rpx 16rpx;
+    font-size: 22rpx;
+  }
+}
+
+.theme-dark .bp {
+  box-shadow: 0 24rpx 70rpx rgba(0, 0, 0, 0.55);
+}
+
+/* -------------------------------- 动画 -------------------------------- */
+
+@keyframes buddyFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9rpx);
+  }
+}
+
+/* 走路：幅度小、频率快，左右 1.2° 假装在迈步 */
+/**
+ * 走路：身体随步伐左右转移重心。
+ * 上下起伏（原来 translateY -6rpx）去掉了 —— 有了真迈步帧，脚是踩在地上的，
+ * 再整体抬一下就成了"脚离地飘着走"。
+ * 周期 0.46s ≈ 走路帧循环一圈（4 帧 × 115ms），两边的节奏对得上。
+ */
+@keyframes buddyWalk {
+  0% {
+    transform: rotate(-1.1deg);
+  }
+  50% {
+    transform: rotate(1.1deg);
+  }
+  100% {
+    transform: rotate(-1.1deg);
+  }
+}
+
+@keyframes bpIn {
+  from {
+    opacity: 0;
+    transform: translateY(18rpx) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 寒暄气泡：从上往下轻轻落下来，比缩放更像"开口说话" */
+@keyframes sayIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10rpx);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dotUp {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  30% {
+    transform: translateY(-8rpx);
+    opacity: 1;
+  }
+}

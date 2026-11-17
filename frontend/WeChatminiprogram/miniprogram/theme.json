@@ -1,0 +1,38 @@
+{
+  "light": {
+    "navBg": "#F7F8FC",
+    "navTxt": "black",
+    "bgColor": "#F7F8FC",
+    "bgTxtStyle": "dark",
+    "tabColor": "#9AA3B2",
+    "tabSelColor": "#4C6FFF",
+    "tabBg": "#FFFFFF",
+    "tabBorder": "white",
+    "iconDevice": "assets/tabbar/device.png",
+    "iconDeviceOn": "assets/tabbar/device-active.png",
+    "iconTrend": "assets/tabbar/trend.png",
+    "iconTrendOn": "assets/tabbar/trend-active.png",
+    "iconAlarm": "assets/tabbar/alarm.png",
+    "iconAlarmOn": "assets/tabbar/alarm-active.png",
+    "iconMine": "assets/tabbar/mine.png",
+    "iconMineOn": "assets/tabbar/mine-active.png"
+  },
+  "dark": {
+    "navBg": "#0B1120",
+    "navTxt": "white",
+    "bgColor": "#070A12",
+    "bgTxtStyle": "light",
+    "tabColor": "#7A869A",
+    "tabSelColor": "#6AA6FF",
+    "tabBg": "#0B1120",
+    "tabBorder": "black",
+    "iconDevice": "assets/tabbar/device-dark.png",
+    "iconDeviceOn": "assets/tabbar/device-dark-active.png",
+    "iconTrend": "assets/tabbar/trend-dark.png",
+    "iconTrendOn": "assets/tabbar/trend-dark-active.png",
+    "iconAlarm": "assets/tabbar/alarm-dark.png",
+    "iconAlarmOn": "assets/tabbar/alarm-dark-active.png",
+    "iconMine": "assets/tabbar/mine-dark.png",
+    "iconMineOn": "assets/tabbar/mine-dark-active.png"
+  }
+}

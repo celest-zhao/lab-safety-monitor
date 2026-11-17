@@ -1,0 +1,131 @@
+/* 报警页 */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 -8rpx 16rpx;
+}
+
+.chip {
+  padding: 12rpx 24rpx;
+  margin: 0 8rpx 16rpx;
+  border-radius: 999rpx;
+  background: var(--item-bg);
+  border: 1rpx solid var(--line);
+  font-size: 25rpx;
+  color: var(--text-sub);
+  min-height: 64rpx;
+  display: flex;
+  align-items: center;
+}
+
+.chip-on {
+  background: var(--primary-soft);
+  border-color: var(--primary-line);
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.toolbar {
+  padding: 0 8rpx 16rpx;
+}
+
+.toolbar-act {
+  padding-left: 28rpx;
+}
+
+/* ------------------------------- 左滑删除 -------------------------------- */
+/* 卡片在上面滑，删除层在下面不动；两层都靠 .swipe-row 的 overflow 裁圆角 */
+
+.swipe-row {
+  position: relative;
+  overflow: hidden;
+  border-radius: 28rpx;
+  margin-bottom: 24rpx;
+}
+
+/* 视觉层：卡片滑开后从底下露出来的红色块 */
+.swipe-del {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 152rpx; /* 和 index.js 的 DEL_RPX、下面 .swipe-del-hit 是同一个数，改一处必须改三处 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--error);
+  color: #ffffff;
+  font-size: 26rpx;
+  font-weight: 500;
+  z-index: 0;
+}
+
+/* 点击层：滑开后才渲染，独立一层、不带 transform。
+   为什么要单独一层（2026-11-09 真机反馈「点删除删不掉，反而变暗、卡住」）：
+   卡片是靠 transform 左移的，部分基础库会把这类元素提升成合成层，
+   命中测试仍按未位移的布局框算 —— 点右侧露出的「删除」，事件其实落回卡片上，
+   于是触发「标记为已读」（整张卡 opacity 0.62 变暗）并顺手把行收起（看着像卡住）。
+   这一层不参与 transform，DOM 在卡片之后、z-index 更高，点击一定命中。 */
+.swipe-del-hit {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 152rpx;
+  z-index: 10;
+}
+
+.swipe-del-hit:active {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.swipe-body {
+  position: relative;
+  z-index: 1;
+  margin-bottom: 0; /* .card 自带 margin，行间距交给 .swipe-row 统一控制 */
+  transition: transform 0.18s ease;
+  /* 不写 will-change：它会强制提升合成层，正是上面那个点击错位问题的诱因之一 */
+  /* 深色主题的 --card 是 rgba(255,255,255,0.045)，半透明 —— 底下那块红色会透上来，
+     看着像每行都有一层暗红底。所以给卡片自己垫一层实底：
+     background-color 用页面底色，background-image 再把卡片那层色叠上去，合成不透明。
+     浅色主题 --card 本来就是纯白，这样写结果不变。 */
+  background-color: var(--bg);
+  background-image: linear-gradient(var(--card), var(--card));
+}
+
+/* 手指拖动时关掉过渡，否则会慢半拍、看着不跟手 */
+.swipe-dragging {
+  transition: none;
+}
+
+.alarm-card {
+  padding: 28rpx 32rpx;
+}
+
+.alarm-read {
+  opacity: 0.62;
+}
+
+.unread-dot {
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+  background: var(--error);
+  margin-right: 12rpx;
+  flex: none;
+}
+
+.alarm-name {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: var(--text);
+  margin-left: 12rpx;
+}
+
+.foot-note {
+  text-align: center;
+  font-size: 22rpx;
+  color: var(--text-hint);
+  padding: 16rpx 0 8rpx;
+}

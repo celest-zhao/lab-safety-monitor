@@ -1,0 +1,27 @@
+# 真实密钥：华为云 AK/SK 在 config.js 里，绝不能提交
+cloudfunctions/iotApi/config.js
+
+# 本机临时放的大模型 key（tools/probe_llm.js 自动读取）
+tools/llm-key.txt
+.llm-key
+**/.llm-key
+key.txt
+
+# 开发者工具的私有配置（含本机路径、个人设置）
+project.private.config.json
+
+# 依赖与缓存
+node_modules/
+__pycache__/
+*.pyc
+_cut_cache.pkl
+
+# 系统杂项
+.DS_Store
+Thumbs.db
+
+# aiApi 本地配置（含大模型 key，随云函数上传但不进 git）
+cloudfunctions/aiApi/config.js
+
+# 打包输出
+dist/

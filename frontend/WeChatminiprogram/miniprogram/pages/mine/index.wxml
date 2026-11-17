@@ -1,0 +1,99 @@
+<!-- 我的页（tab 3） -->
+<view class="page page-with-safe theme-{{theme}}">
+  <!-- 身份卡 -->
+  <view class="card profile">
+    <view class="avatar">设</view>
+    <view class="flex-1">
+      <view class="profile-name">设备管理员</view>
+      <view class="profile-sub">{{authMode === 'whitelist' ? '已授权' : '开放访问'}}</view>
+    </view>
+    <view class="tag {{configured ? 'tag-success' : 'tag-warning'}}">
+      {{configured ? '已连接' : '示例数据'}}
+    </view>
+  </view>
+
+  <!-- 连接状态 -->
+  <view class="card">
+    <view class="card-hd">
+      <text class="card-title">连接</text>
+    </view>
+
+    <view class="list-row" bindtap="copyOpenid">
+      <text class="list-label">本机标识</text>
+      <text class="list-value ellipsis">{{openid || '获取中…'}}</text>
+      <text class="list-arrow">复制</text>
+    </view>
+
+    <view class="list-row" bindtap="onHealth">
+      <text class="list-label">连接自检</text>
+      <text class="list-value">{{checking ? '检测中…' : '检查连接状态'}}</text>
+      <text class="list-arrow">›</text>
+    </view>
+
+    <view class="list-row" bindtap="onSync">
+      <text class="list-label">立即同步一次</text>
+      <text class="list-value">{{syncing ? '同步中…' : '获取最新数据'}}</text>
+      <text class="list-arrow">›</text>
+    </view>
+
+    <!-- 自检结果内联展示：弹窗会截断长文本，而修复建议往往很长 -->
+    <block wx:if="{{healthText}}">
+      <view class="divider"></view>
+      <view class="health-box">
+        <view class="health-text">{{healthText}}</view>
+        <block wx:if="{{healthAdvice}}">
+          <view class="err-tip">怎么修</view>
+          <view class="health-advice">{{healthAdvice}}</view>
+        </block>
+      </view>
+    </block>
+
+    <view class="list-row" bindtap="goAlarm">
+      <text class="list-label">未读报警</text>
+      <text class="list-value {{unread ? 't-error' : ''}}">{{unread}} 条</text>
+      <text class="list-arrow">›</text>
+    </view>
+  </view>
+
+  <!-- 外观模式 -->
+  <view class="card">
+    <view class="card-hd">
+      <text class="card-title">外观</text>
+      <text class="card-sub">{{themeLabel}}</text>
+    </view>
+    <view class="seg">
+      <view
+        wx:for="{{themeModes}}"
+        wx:key="key"
+        class="seg-item {{themeMode === item.key ? 'on' : ''}}"
+        data-key="{{item.key}}"
+        bindtap="onThemeMode"
+      >{{item.label}}</view>
+    </view>
+    <view class="seg-tip">只保存在本机，切换后立即生效</view>
+  </view>
+
+  <!-- 说明 -->
+  <view class="card">
+    <view class="card-hd">
+      <text class="card-title">说明</text>
+    </view>
+
+    <view class="list-row">
+      <text class="list-label">版本</text>
+      <text class="list-value">{{version}}</text>
+    </view>
+
+    <view class="list-row" bindtap="onAbout">
+      <text class="list-label">报警规则</text>
+      <text class="list-value">严重 / 警告 / 提示</text>
+      <text class="list-arrow">›</text>
+    </view>
+  </view>
+
+  <view wx:if="{{mock}}" class="banner banner-warn">
+    <view class="banner-dot"></view>
+    <view class="banner-text">当前显示的是示例数据</view>
+  </view>
+
+</view>

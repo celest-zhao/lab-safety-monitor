@@ -1,0 +1,10 @@
+{
+  "name": "initDb",
+  "version": "1.0.0",
+  "description": "初始化数据库集合（幂等）",
+  "main": "index.js",
+  "license": "ISC",
+  "dependencies": {
+    "wx-server-sdk": "~2.4.0"
+  }
+}

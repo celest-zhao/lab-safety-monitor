@@ -1,0 +1,10 @@
+{
+  "name": "envPing",
+  "version": "1.0.0",
+  "description": "EnvId 只读诊断函数，不写入任何数据",
+  "main": "index.js",
+  "license": "ISC",
+  "dependencies": {
+    "wx-server-sdk": "~2.4.0"
+  }
+}

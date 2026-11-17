@@ -1,0 +1,95 @@
+<!-- 报警页（tab 2） -->
+<view class="page page-with-safe theme-{{theme}}">
+  <view wx:if="{{error}}" class="banner banner-danger" bindtap="onRetry">
+    <view class="banner-dot"></view>
+    <view class="banner-text">{{error}}　点这里重试</view>
+  </view>
+
+  <!-- 筛选 -->
+  <view class="chips">
+    <view
+      wx:for="{{filters}}"
+      wx:key="key"
+      class="chip {{filter === item.key ? 'chip-on' : ''}}"
+      bindtap="onFilterTap"
+      data-key="{{item.key}}"
+    >{{item.label}} {{counts[item.key]}}</view>
+  </view>
+
+  <!-- 操作条：未读数 + 全部已读 + 清空（按当前筛选清） -->
+  <view wx:if="{{!loading && counts.all > 0}}" class="row-between toolbar">
+    <text class="fs-24 text-sub">{{unread > 0 ? unread + ' 条未读' : '共 ' + counts.all + ' 条'}}</text>
+    <view class="row-center">
+      <text wx:if="{{unread > 0}}" class="fs-24 t-primary toolbar-act" bindtap="onReadAll">全部已读</text>
+      <text class="fs-24 t-error toolbar-act" bindtap="onClearTap">清空{{filter === 'all' ? '全部' : '本类'}}</text>
+    </view>
+  </view>
+
+  <!-- 骨架 -->
+  <block wx:if="{{loading}}">
+    <view class="card">
+      <view class="skeleton" style="width: 40%; height: 32rpx"></view>
+      <view class="skeleton mt-16" style="width: 100%; height: 28rpx"></view>
+      <view class="skeleton mt-8" style="width: 70%; height: 28rpx"></view>
+    </view>
+    <view class="card">
+      <view class="skeleton" style="width: 40%; height: 32rpx"></view>
+      <view class="skeleton mt-16" style="width: 100%; height: 28rpx"></view>
+    </view>
+  </block>
+
+  <!-- 空态 -->
+  <view wx:if="{{!loading && !list.length}}" class="empty">
+    <view class="empty-title">没有{{filter === 'all' ? '' : '该类'}}报警</view>
+    <view class="empty-desc">
+      严重：可燃气体异常，或 AI 评分低于 20；警告：温度 ≥ 35℃ 或检测到人体；提示：设备离线。
+    </view>
+  </view>
+
+  <!-- 列表：每行可左滑露出「删除」 -->
+  <view wx:for="{{list}}" wx:key="_id" class="swipe-row">
+    <!-- 红色底：卡片滑开后露出来（只负责好看，不接点击） -->
+    <view class="swipe-del">删除</view>
+
+    <view
+      class="card alarm-card swipe-body {{item.drag ? 'swipe-dragging' : ''}} {{item.read ? 'alarm-read' : ''}}"
+      style="transform: translateX({{item.tx}}px)"
+      bindtouchstart="onRowTouchStart"
+      bindtouchmove="onRowTouchMove"
+      bindtouchend="onRowTouchEnd"
+      bindtouchcancel="onRowTouchEnd"
+      bindtap="onAlarmTap"
+      data-id="{{item._id}}"
+      data-idx="{{index}}"
+    >
+      <view class="row-between">
+        <view class="row-center">
+          <view wx:if="{{!item.read}}" class="unread-dot"></view>
+          <view
+            class="tag {{item.level === 'severe' ? 'tag-error' : item.level === 'warning' ? 'tag-warning' : 'tag-muted'}}"
+          >{{item.levelText}}</view>
+          <text class="alarm-name">{{item.title}}</text>
+        </view>
+        <text class="fs-22 text-hint">{{item.timeText}}</text>
+      </view>
+
+      <view class="fs-26 text-sub mt-16">{{item.detail}}</view>
+
+      <view class="row-between mt-16">
+        <text class="fs-22 text-hint">{{item.deviceName}}</text>
+        <text wx:if="{{!item.read}}" class="fs-22 t-primary">点击标为已读</text>
+      </view>
+    </view>
+
+    <!-- 点击层：只在滑开时出现，盖在卡片上面（见 index.wxss 注释） -->
+    <view
+      wx:if="{{item.open}}"
+      class="swipe-del-hit"
+      catchtap="onDelete"
+      data-id="{{item._id}}"
+      data-idx="{{index}}"
+    ></view>
+  </view>
+
+  <view wx:if="{{!loading && list.length}}" class="foot-note">左滑可删除</view>
+</view>

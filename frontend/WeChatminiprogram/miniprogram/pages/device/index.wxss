@@ -1,0 +1,113 @@
+/* 设备页（首页看板） */
+
+/**
+ * 滚动结构：外壳固定一屏高，里面的 scroll-view 独占滚动。
+ *
+ * 页面本身用 index.json 的 disableScroll 锁死，所以只有 scroll-view 能滚。
+ * 这样一来：
+ *   - 拖桌宠不会被当成页面下拉（页面根本没得滚）；
+ *   - 松手也不会有任何位置补偿动作（scrollTop 从头到尾没变过）。
+ *
+ * 曾经的 .page-lock(position:fixed) 就是死在第二条：fixed 让文档高度塌成 0，
+ * scrollTop 被清零，恢复时必然闪一帧「页面跳回顶部」。
+ *
+ * padding 从 .page 挪到 .page-body：外壳不能有 padding，否则 scroll-view 高度算不满，
+ * 回弹到底时会在内侧露出一条底色。
+ *
+ * 外壳刻意不写 overflow:hidden —— 桌宠和弹层是 position:fixed 的后代，
+ * 部分 iOS 机型上会被带 overflow 的祖先裁掉。页面已经 disableScroll，不需要它兜底。
+ */
+/* 用双类选择器压过 app.wxss 的 .page（同为单类时只靠加载顺序，不可靠） */
+.page.page-shell {
+  height: 100vh;
+  min-height: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  /**
+   * 渐变必须留在内容层（见 .page-body），这里只留纯色底。
+   * --bg-image 里是百分比定位的径向渐变（at 15% -8%），参照的是**元素盒子尺寸**：
+   * 外壳只有 100vh，而原来 .page 的高度等于整块内容，盒子一变渐变就跟着变。
+   * 实测内容超过一屏时，渐变差异会让 1.5% 的像素不一样（最大 60 级），肉眼能看出底色深浅变了。
+   */
+  background-image: none;
+}
+
+.page-scroll {
+  flex: 1;
+  height: 100%;
+}
+
+.page-body {
+  /* 和原来 .page 的内边距一致 */
+  padding: 24rpx 24rpx calc(48rpx + env(safe-area-inset-bottom));
+  /* 内容不足一屏时也要铺满。用 100vh 不用 100%：scroll-view 的内容层是 auto 高度，
+     百分比会失效，而 100vh 和原来 .page 的 min-height 语义一致 */
+  min-height: 100vh;
+  /* 底色和渐变都铺在内容层：高度 = max(100vh, 内容高)，和改造前的 .page 一致，
+     所以渐变的落点、大小、滚动时的跟随行为全部不变 */
+  background: var(--bg);
+  background-image: var(--bg-image);
+  background-repeat: no-repeat;
+}
+
+.ai-score {
+  font-size: 32rpx;
+  font-weight: 700;
+  margin: 0 12rpx 0 10rpx;
+  letter-spacing: -0.5rpx;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 控制模块里的两个开关 */
+.ctrl-row {
+  display: flex;
+  margin-top: 12rpx;
+}
+
+.ctrl-pill {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 84rpx;
+  margin-right: 14rpx;
+  border-radius: 20rpx;
+  background: var(--item-bg);
+  border: 1rpx solid var(--ctrl-line);
+  color: var(--text-sub);
+  transition: all 0.15s ease;
+}
+
+.ctrl-pill:last-child {
+  margin-right: 0;
+}
+
+.ctrl-pill:active {
+  transform: scale(0.97);
+}
+
+.ctrl-pill-on {
+  background: var(--ctrl-on-bg);
+  border-color: var(--ctrl-on-line);
+  color: var(--ctrl-on-text);
+  box-shadow: var(--ctrl-on-shadow);
+}
+
+.ctrl-ico {
+  font-size: 26rpx;
+  margin-right: 8rpx;
+  opacity: 0.9;
+}
+
+.ctrl-text {
+  font-size: 25rpx;
+  font-weight: 600;
+}
+
+.foot-note {
+  text-align: center;
+  font-size: 21rpx;
+  color: var(--text-hint);
+  padding: 22rpx 0 8rpx;
+}

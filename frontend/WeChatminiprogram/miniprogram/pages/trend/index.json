@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "趋势分析",
+  "enablePullDownRefresh": true,
+  "backgroundTextStyle": "@bgTxtStyle",
+  "usingComponents": {}
+}

@@ -1,0 +1,10 @@
+{
+  "name": "iotApi",
+  "version": "1.0.0",
+  "description": "IoT 设备监控小程序数据网关（IoTDA 拉取 + 控制下发）",
+  "main": "index.js",
+  "private": true,
+  "dependencies": {
+    "wx-server-sdk": "~2.4.0"
+  }
+}

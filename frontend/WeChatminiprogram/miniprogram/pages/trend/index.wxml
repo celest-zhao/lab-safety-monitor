@@ -1,0 +1,151 @@
+<!-- 趋势页（tab 1） -->
+<view class="page page-with-safe theme-{{theme}}">
+  <view wx:if="{{error}}" class="banner banner-danger" bindtap="onRetry">
+    <view class="banner-dot"></view>
+    <view class="banner-text">{{error}}　点这里重试</view>
+  </view>
+
+  <view wx:if="{{!devices.length && !loading}}" class="empty">
+    <view class="empty-title">还没有设备</view>
+    <view class="empty-desc">先在「设备」页同步一次数据。</view>
+  </view>
+
+  <block wx:if="{{devices.length}}">
+    <!-- 设备选择 -->
+    <view class="card">
+      <view class="row-between">
+        <text class="card-title">设备</text>
+        <picker
+          wx:if="{{devices.length > 1}}"
+          mode="selector"
+          range="{{deviceNames}}"
+          value="{{deviceIndex}}"
+          bindchange="onDeviceChange"
+        >
+          <view class="picker-value">{{deviceNames[deviceIndex]}} ›</view>
+        </picker>
+        <text wx:else class="fs-26 text-sub">{{deviceNames[0]}}</text>
+      </view>
+    </view>
+
+    <!-- 属性切换 -->
+    <view class="chips">
+      <view
+        wx:for="{{fields}}"
+        wx:key="key"
+        class="chip {{field === item.key ? 'chip-on' : ''}}"
+        bindtap="onFieldTap"
+        data-key="{{item.key}}"
+      >{{item.label}}</view>
+    </view>
+
+    <!-- 图表 -->
+    <view class="card">
+      <view class="card-hd">
+        <text class="card-title">{{fieldLabel}}趋势</text>
+        <text class="fs-22 text-hint">{{rangeText}}</text>
+      </view>
+
+      <view wx:if="{{loading}}" class="skeleton" style="width: 100%; height: 320rpx"></view>
+
+      <view wx:elif="{{!segs.length && !dots.length}}" class="chart-empty">
+        <view class="fs-28 text-sub">还没有历史数据</view>
+      </view>
+
+      <!--
+        折线图：每段是绝对定位的细条，靠 rotate 连成线；plot 宽高用固定 rpx，
+        与 JS 里的 PLOT_W / PLOT_H 一一对应，改一处必须同时改另一处。
+      -->
+      <view wx:else class="chart">
+        <view class="plot">
+          <view class="grid" style="top: 33.4%"></view>
+          <view class="grid" style="top: 66.7%"></view>
+          <view
+            wx:for="{{segs}}"
+            wx:key="k"
+            class="seg"
+            style="left:{{item.l}}rpx;top:{{item.t}}rpx;width:{{item.w}}rpx;transform:translate(0,-1.5rpx) rotate({{item.r}}deg)"
+          ></view>
+          <view
+            wx:for="{{dots}}"
+            wx:key="k"
+            class="dot {{item.last ? 'dot-last' : ''}}"
+            style="left:{{item.l}}rpx;top:{{item.t}}rpx"
+          ></view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 统计 -->
+    <view class="card">
+      <view class="card-hd">
+        <text class="card-title">统计</text>
+        <text wx:if="{{sampled < count}}" class="fs-22 text-hint">最近 {{count}} 点 · 绘 {{sampled}}</text>
+        <text wx:else class="fs-22 text-hint">共 {{count}} 个点</text>
+      </view>
+      <view class="stat-grid">
+        <view class="stat">
+          <view class="stat-label">当前</view>
+          <view class="stat-value">
+            <text class="t-primary">{{stats.cur}}</text>
+            <text wx:if="{{unit}}" class="stat-unit">{{unit}}</text>
+          </view>
+        </view>
+        <view class="stat">
+          <view class="stat-label">最高</view>
+          <view class="stat-value">
+            <text class="t-error">{{stats.max}}</text>
+            <text wx:if="{{unit}}" class="stat-unit">{{unit}}</text>
+          </view>
+        </view>
+        <view class="stat">
+          <view class="stat-label">最低</view>
+          <view class="stat-value">
+            <text class="t-success">{{stats.min}}</text>
+            <text wx:if="{{unit}}" class="stat-unit">{{unit}}</text>
+          </view>
+        </view>
+        <view class="stat">
+          <view class="stat-label">平均</view>
+          <view class="stat-value">
+            <text class="t-normal">{{stats.avg}}</text>
+            <text wx:if="{{unit}}" class="stat-unit">{{unit}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 异常汇总（L1）：四项各自最近一次越线的时间点，一项一行 -->
+    <view class="card">
+      <view class="card-hd">
+        <text class="card-title">异常汇总</text>
+        <text class="fs-22 text-hint">{{summaryBad ? summaryBad + ' 项异常' : '全部正常'}}</text>
+      </view>
+
+      <view wx:if="{{!summary.length}}" class="chart-empty">
+        <view class="fs-28 text-sub">还没有历史数据</view>
+      </view>
+
+      <view wx:else class="l1-list">
+        <view
+          wx:for="{{summary}}"
+          wx:key="key"
+          class="l1-row {{item.bad ? 'l1-row-bad' : ''}}"
+          hover-class="l1-row-hover"
+          bindtap="onSummaryTap"
+          data-key="{{item.key}}"
+        >
+          <view class="l1-left">
+            <text class="l1-name">{{item.label}}</text>
+            <text class="l1-rule">{{item.rule}}</text>
+            <text wx:if="{{item.hits > 1}}" class="l1-hits">{{item.hits}} 次</text>
+          </view>
+          <view class="l1-right">
+            <text class="l1-time">{{item.timeText}}</text>
+            <text wx:if="{{item.valText}}" class="l1-val">{{item.valText}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>

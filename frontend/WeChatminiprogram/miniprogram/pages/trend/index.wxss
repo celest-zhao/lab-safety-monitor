@@ -1,0 +1,227 @@
+/* 趋势页 */
+
+.picker-value {
+  font-size: 26rpx;
+  color: var(--primary);
+  padding: 8rpx 0 8rpx 20rpx;
+}
+
+/* ------------------------------- 属性切换 ------------------------------- */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0 -8rpx 24rpx;
+}
+
+.chip {
+  padding: 12rpx 28rpx;
+  margin: 0 8rpx 16rpx;
+  border-radius: 999rpx;
+  background: var(--item-bg);
+  border: 1rpx solid var(--line);
+  font-size: 26rpx;
+  color: var(--text-sub);
+  min-height: 64rpx;
+  display: flex;
+  align-items: center;
+}
+
+.chip-on {
+  background: var(--primary-soft);
+  border-color: var(--primary-line);
+  color: var(--primary);
+  font-weight: 500;
+}
+
+/* --------------------------------- 图表 --------------------------------- */
+
+/**
+ * 折线图。plot 的 630×320rpx 是刻意的固定值：
+ * JS 里的 PLOT_W / PLOT_H 就是这两个数，线段长度、旋转角全按它们算好再写进 style。
+ * 用百分比自适应反而会让角度算不准（rpx 已经是等比缩放的，不需要再自适应）。
+ */
+.chart {
+  height: 320rpx;
+  border-bottom: 1rpx solid var(--line);
+}
+
+.plot {
+  position: relative;
+  width: 630rpx;
+  height: 320rpx;
+  margin: 0 auto;
+}
+
+/* 两条淡横线，给折线一个高度参照，不写任何坐标文字 */
+.grid {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1rpx;
+  background: var(--line);
+  opacity: 0.5;
+}
+
+/* 一段折线：以左中点为轴旋转到相邻两点的连线角度 */
+.seg {
+  position: absolute;
+  height: 3rpx;
+  border-radius: 3rpx;
+  background: var(--primary);
+  transform-origin: 0 50%;
+}
+
+.dot {
+  position: absolute;
+  width: 8rpx;
+  height: 8rpx;
+  margin: -4rpx 0 0 -4rpx;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+/* 最新的一点：放大 + 用绿色，和「当前值」对上 */
+.dot-last {
+  width: 12rpx;
+  height: 12rpx;
+  margin: -6rpx 0 0 -6rpx;
+  background: var(--success);
+  box-shadow: 0 0 0 6rpx var(--success-line);
+}
+
+/**
+ * 深色下给折线一点自发光，让它从玻璃卡上浮起来（蓝 = v1 主色 #4c8dff）。
+ * 浅色不加：白底上加光晕只会显脏。
+ */
+.page.theme-dark .seg {
+  box-shadow: 0 0 8rpx rgba(76, 141, 255, 0.5);
+}
+
+.page.theme-dark .dot {
+  box-shadow: 0 0 10rpx rgba(76, 141, 255, 0.65);
+}
+
+.page.theme-dark .dot-last {
+  box-shadow: 0 0 0 6rpx var(--success-line), 0 0 12rpx rgba(53, 211, 154, 0.6);
+}
+
+.chart-empty {
+  padding: 80rpx 20rpx;
+  text-align: center;
+}
+
+/* --------------------------------- 统计 --------------------------------- */
+
+.stat-grid {
+  display: flex;
+}
+
+.stat {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 22rpx;
+  color: var(--text-hint);
+  margin-bottom: 8rpx;
+}
+
+.stat-value {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  font-size: 34rpx;
+  font-weight: 600;
+  letter-spacing: -0.5rpx;
+}
+
+.stat-unit {
+  font-size: 20rpx;
+  color: var(--text-hint);
+  margin-left: 3rpx;
+}
+
+.foot-note {
+  text-align: center;
+  font-size: 22rpx;
+  color: var(--text-hint);
+  line-height: 1.6;
+  padding: 8rpx 24rpx 8rpx;
+}
+
+/* 异常汇总：左标签+阈值+次数，右时间点+读数。越线的行整行变警示色，一眼扫得到 */
+.l1-list {
+  margin-top: 6rpx;
+}
+
+.l1-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 18rpx 0;
+  border-bottom: 1rpx solid var(--line-soft);
+}
+
+.l1-row:last-child {
+  border-bottom: none;
+  padding-bottom: 4rpx;
+}
+
+/* 点一行切曲线，得让人知道可以点 */
+.l1-row-hover {
+  opacity: 0.6;
+}
+
+.l1-left {
+  display: flex;
+  align-items: baseline;
+  flex: 1;
+  min-width: 0;
+}
+
+.l1-right {
+  display: flex;
+  align-items: baseline;
+  flex-shrink: 0;
+  margin-left: 16rpx;
+}
+
+.l1-name {
+  font-size: 26rpx;
+  color: var(--text);
+}
+
+.l1-rule {
+  margin-left: 12rpx;
+  font-size: 21rpx;
+  color: var(--text-hint);
+}
+
+/* 越线次数：只在一行里有多次时出现，提示这是复发而不是偶发 */
+.l1-hits {
+  margin-left: 10rpx;
+  font-size: 21rpx;
+  color: var(--text-hint);
+}
+
+.l1-time {
+  font-size: 26rpx;
+  color: var(--text-sub);
+  font-variant-numeric: tabular-nums;
+}
+
+/* 那一次的读数：比时间点退一级（时间在越线行是红色的），不抢「什么时候」这条信息 */
+.l1-val {
+  margin-left: 10rpx;
+  font-size: 22rpx;
+  color: var(--text-sub);
+  font-variant-numeric: tabular-nums;
+}
+
+.l1-row-bad .l1-name,
+.l1-row-bad .l1-time {
+  color: var(--error);
+}

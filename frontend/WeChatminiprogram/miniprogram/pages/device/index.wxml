@@ -1,0 +1,233 @@
+<!-- 设备页（tab 0）：环境监测看板 · 可自定义模块 -->
+<!-- bindtouchstart：任何一个触摸都算"有人在用"，用来把桌宠的休眠倒计时往后推 -->
+<!--
+  滚动结构（2026-11-09 晚6）：整页只有 scroll-view 能滚，页面本身用 disableScroll 锁死。
+
+  为什么推翻之前的 .page-lock(fixed) 方案：fixed 确实挡住了滚动，但它让文档高度塌成 0，
+  scrollTop 被清成 0，松手恢复时必须 pageScrollTo 补回来 —— 中间必然有一帧停在顶部，
+  看到的就是「拖完页面下来一下」。这是结构性的，调顺序、加过渡都盖不住。
+
+  换成 scroll-view 后：没有 fixed、没有位置补偿、scrollTop 从头到尾没变过，跳变不存在。
+  下拉刷新也换成 refresher-enabled（运行时可控），拖桌宠时直接把它关掉。
+-->
+<view class="page theme-{{theme}} page-shell" bindtouchstart="onUserTouch">
+  <scroll-view
+    class="page-scroll"
+    scroll-y
+    refresher-enabled="{{refreshEnabled}}"
+    refresher-triggered="{{refreshing}}"
+    refresher-default-style="{{theme === 'dark' ? 'white' : 'black'}}"
+    refresher-background="{{theme === 'dark' ? '#070a12' : '#f7f8fc'}}"
+    bindrefresherrefresh="onRefresh"
+  >
+    <view class="page-body">
+      <!-- 拉取失败原因（真实接口报错，直接给出可定位的信息） -->
+      <view wx:if="{{syncError}}" class="err-box">
+        <view class="err-label">拉取失败</view>
+        <view class="err-text">{{syncError}}</view>
+        <view class="err-tip">检查网络后重试；一直这样就到「我的」页做一次连接自检。</view>
+      </view>
+
+      <!-- 加载失败 -->
+      <view wx:if="{{error}}" class="banner banner-danger" bindtap="onRetry">
+        <view class="banner-dot"></view>
+        <view class="banner-text">{{error}}</view>
+      </view>
+
+      <!-- 严重报警提示 -->
+      <view wx:if="{{alarmSummary.severe > 0}}" class="banner banner-danger" bindtap="goAlarm">
+        <view class="banner-dot"></view>
+        <view class="banner-text">有 {{alarmSummary.severe}} 条严重报警待处理</view>
+        <view class="fs-24">查看 ›</view>
+      </view>
+
+      <!-- 骨架屏 -->
+      <block wx:if="{{loading}}">
+        <view class="hero">
+          <view class="skeleton" style="width: 320rpx; height: 44rpx"></view>
+          <view class="skeleton mt-16" style="width: 220rpx; height: 28rpx"></view>
+          <view class="skeleton mt-24" style="width: 300rpx; height: 84rpx"></view>
+        </view>
+        <view class="mod-grid">
+          <view class="mod" wx:for="{{[1,2,3,4]}}" wx:key="*this">
+            <view class="mod-inner"><view class="skeleton" style="width: 100%; height: 100rpx"></view></view>
+          </view>
+        </view>
+      </block>
+
+      <!-- 空态：没有设备 -->
+      <view wx:if="{{!loading && !device}}" class="empty">
+        <view class="empty-title">{{syncError ? '暂时拉不到设备数据' : '还没有设备数据'}}</view>
+        <view class="empty-desc">{{emptyDesc}}</view>
+        <view class="btn btn-primary mt-24" bindtap="onRetry">重新加载</view>
+      </view>
+
+      <block wx:if="{{!loading && device}}">
+        <!-- 顶部主卡 -->
+        <view class="hero">
+          <view class="hero-glow"></view>
+
+          <view class="row-between">
+            <view class="flex-1">
+              <view class="hero-name ellipsis">{{device.name}}</view>
+              <view class="hero-meta">{{device.online ? '在线' : '离线'}} · 最后上报 {{device.updatedText}}</view>
+            </view>
+            <view class="hero-status">
+              <view class="status-dot {{device.online ? 'dot-online' : 'dot-offline'}}"></view>
+              {{device.online ? '在线' : '离线'}}
+            </view>
+          </view>
+
+          <view class="hero-big" bindtap="goDetail">
+            <view>
+              <view class="hero-big-label">{{hero.label}}</view>
+              <view class="hero-big-value t-{{hero.tone}}">{{hero.value}}</view>
+            </view>
+            <text class="hero-big-unit">{{hero.unit}}</text>
+          </view>
+
+          <view class="row-between mt-16">
+            <view class="row-center">
+              <text class="fs-24 text-hint">AI 评分</text>
+              <text class="ai-score t-{{device.ai.tone}}">{{device.ai.score}}</text>
+              <view class="tag {{device.ai.tagClass}}">{{device.ai.text}}</view>
+            </view>
+            <view class="fs-22 hero-link" bindtap="goDetail">查看详情 ›</view>
+          </view>
+        </view>
+
+        <!-- 多设备切换 -->
+        <scroll-view wx:if="{{chips.length > 1}}" scroll-x class="chip-scroll" enable-flex>
+          <view
+            wx:for="{{chips}}"
+            wx:key="deviceId"
+            class="chip {{idx === index ? 'chip-on' : ''}}"
+            bindtap="switchDevice"
+            data-idx="{{index}}"
+          >{{item.name}}</view>
+        </scroll-view>
+
+        <!-- 看板工具条 -->
+        <view class="dash-tools">
+          <view class="dash-tools-title">我的看板 · {{modules.length}} 个模块</view>
+          <view class="row-center">
+            <view wx:if="{{editMode}}" class="dash-tool-btn" bindtap="resetModules" style="margin-right: 12rpx">恢复默认</view>
+            <view class="dash-tool-btn {{editMode ? 'dash-tool-btn-on' : ''}}" bindtap="toggleEdit">{{editMode ? '完成' : '编辑'}}</view>
+          </view>
+        </view>
+
+        <!-- 模块网格 -->
+        <view class="mod-grid">
+          <view
+            wx:for="{{modules}}"
+            wx:key="id"
+            class="mod {{item.wide ? 'mod-wide' : ''}}"
+            bindlongpress="onModuleLongPress"
+            data-id="{{item.id}}"
+          >
+            <view class="mod-inner mod-c-{{item.color}} {{editMode ? 'mod-shake' : ''}}">
+              <!-- 指标模块 -->
+              <block wx:if="{{item.kind === 'field'}}">
+                <view class="mod-label"><view class="mod-dot"></view>{{item.label}}</view>
+                <view class="mod-value-row">
+                  <text class="{{item.big ? 'mod-value' : 'mod-value-sm'}} t-{{item.tone}}">{{item.value}}</text>
+                  <text wx:if="{{item.unit}}" class="mod-unit">{{item.unit}}</text>
+                </view>
+              </block>
+
+              <!-- 控制模块 -->
+              <block wx:elif="{{item.kind === 'control'}}">
+                <view class="mod-label"><view class="mod-dot"></view>远程控制</view>
+                <view class="ctrl-row">
+                  <view
+                    class="ctrl-pill {{device.fill ? 'ctrl-pill-on' : ''}}"
+                    catchtap="onToggleControl"
+                    catchlongpress="noop"
+                    data-field="Fill"
+                    data-value="{{!device.fill}}"
+                  >
+                    <view class="ctrl-ico">☀</view>
+                    <view class="ctrl-text">补光 {{device.fill ? '开' : '关'}}</view>
+                  </view>
+                  <view
+                    class="ctrl-pill {{device.fan ? 'ctrl-pill-on' : ''}}"
+                    catchtap="onToggleControl"
+                    catchlongpress="noop"
+                    data-field="Fan"
+                    data-value="{{!device.fan}}"
+                  >
+                    <view class="ctrl-ico">❋</view>
+                    <view class="ctrl-text">风扇 {{device.fan ? '开' : '关'}}</view>
+                  </view>
+                </view>
+              </block>
+
+              <!-- 报警模块 -->
+              <block wx:else>
+                <view class="mod-label"><view class="mod-dot"></view>未读报警</view>
+                <view class="mod-value-row">
+                  <text class="mod-value t-{{item.tone}}">{{item.value}}</text>
+                  <text class="mod-unit">条</text>
+                </view>
+                <view class="mod-foot">严重 {{item.severe}} · 警告 {{item.warning}} · 提示 {{item.info}}</view>
+              </block>
+
+              <view wx:if="{{editMode}}" class="mod-del" catchtap="removeModule" data-id="{{item.id}}">✕</view>
+            </view>
+          </view>
+        </view>
+
+        <view class="add-module" bindtap="openSheet">＋ 新建模块</view>
+
+        <view class="foot-note">每 30 秒自动刷新</view>
+      </block>
+    </view>
+  </scroll-view>
+
+  <!-- 新建模块弹层 -->
+  <block wx:if="{{sheetOpen}}">
+    <view class="sheet-mask" bindtap="closeSheet"></view>
+    <view class="sheet">
+      <view class="sheet-hd">
+        <view class="sheet-title">新建模块</view>
+        <view class="sheet-done" bindtap="closeSheet">完成</view>
+      </view>
+      <view class="sheet-tip">点一下添加，<text class="sheet-tip-strong">再点一下移除</text>。</view>
+      <scroll-view scroll-y class="sheet-body">
+        <block wx:for="{{catalog}}" wx:key="title" wx:for-item="g" wx:for-index="gIdx">
+          <view class="sheet-group-title">{{g.title}}</view>
+          <view
+            wx:for="{{g.items}}"
+            wx:key="id"
+            wx:for-item="it"
+            wx:for-index="iIdx"
+            class="sheet-item {{it.added ? 'sheet-item-on' : ''}}"
+            bindtap="addModule"
+            data-id="{{it.id}}"
+            data-kind="{{it.kind}}"
+            data-field="{{it.field}}"
+            data-gi="{{gIdx}}"
+            data-ii="{{iIdx}}"
+          >
+            <view class="flex-1">
+              <view class="sheet-item-label">{{it.label}}</view>
+              <view wx:if="{{it.desc}}" class="sheet-item-desc">{{it.desc}}</view>
+            </view>
+            <view class="{{it.added ? 'sheet-item-done' : 'sheet-item-add'}}">{{it.added ? '✓ 已添加' : '＋ 添加'}}</view>
+          </view>
+        </block>
+        <view class="safe-bottom"></view>
+      </scroll-view>
+    </view>
+  </block>
+
+  <!-- 桌宠 Luster：单击讲数据 / 双击对话 / 按住可拖 / 没人理会睡着 -->
+  <!-- binddrag：拖拽开始/结束，页面据此临时关掉下拉刷新 -->
+  <ai-buddy
+    id="luster"
+    devices="{{devices}}"
+    alarm-summary="{{alarmSummary}}"
+    theme="{{theme}}"
+    binddrag="onLusterDrag"
+  />
+</view>
